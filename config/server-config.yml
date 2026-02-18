@@ -1,0 +1,35 @@
+# Qwen AirLLM Server Configuration
+# This file is mounted from host - edit here, restart container (no rebuild needed)
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "info"
+
+model:
+  path: "/models/Qwen3.5-397B-A17B"
+  max_tokens: 4096
+  temperature: 0.7
+
+inference:
+  # AirLLM settings
+  compression_config:
+    cache_dir: "/cache"
+    # Layer offloading strategy
+    layer_shards_saving_path: "/cache/layer_shards"
+  
+  # Generation defaults
+  max_new_tokens: 1024
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+
+api:
+  # OpenAI compatibility settings
+  model_name: "Qwen/Qwen3.5-397B-A17B"
+  
+logging:
+  directory: "/app/logs"
+  filename: "qwen-server.log"
+  max_size: "100MB"
+  backup_count: 5

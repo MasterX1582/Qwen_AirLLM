@@ -1,0 +1,27 @@
+# AirLLM Inference Server Requirements
+# WORKING VERSIONS - Updated 2026-02-18
+
+# Core ML dependencies
+torch>=2.0.0
+transformers>=4.45.0
+optimum>=2.0.0
+accelerate>=0.26.0
+bitsandbytes>=0.43.0
+safetensors>=0.4.0
+sentencepiece>=0.1.99
+huggingface-hub>=0.20.0
+scipy>=1.10.0
+
+# NOTE: airllm installed from custom wheel (airllm-2.12.0-py3-none-any.whl)
+# Updated AirLLM with Qwen3.5 MoE support + optimum 2.x compatibility
+
+# API server dependencies
+fastapi
+uvicorn[standard]
+pydantic
+pyyaml
+
+# Version notes:
+# - transformers 4.45.0+: Supports Qwen3.5 MoE architecture  
+# - optimum 2.0.0+: Latest version (bettertransformer import made optional)
+# - airllm 2.12.0: Updated with AirLLMQwen3Moe class for Qwen3.5 support

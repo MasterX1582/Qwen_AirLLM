@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Logs
+*.log
+logs/
+
+# Local config overrides
+*.local.yml
+
+# OS
+.DS_Store
+Thumbs.db
