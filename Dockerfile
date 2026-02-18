@@ -19,10 +19,10 @@ COPY requirements.txt /app/requirements.txt
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Install airllm wheel in a separate layer so wheel updates don't re-download torch/CUDA
-COPY airllm-2.12.0-py3-none-any.whl /tmp/airllm-2.12.0-py3-none-any.whl
+COPY airllm-2.13.0-py3-none-any.whl /tmp/airllm-2.13.0-py3-none-any.whl
 RUN pip3 uninstall -y airllm || true && \
-    pip3 install --no-cache-dir /tmp/airllm-2.12.0-py3-none-any.whl && \
-    rm /tmp/airllm-2.12.0-py3-none-any.whl
+    pip3 install --no-cache-dir /tmp/airllm-2.13.0-py3-none-any.whl && \
+    rm /tmp/airllm-2.13.0-py3-none-any.whl
 
 # Copy server code and test script
 COPY server.py /app/server.py

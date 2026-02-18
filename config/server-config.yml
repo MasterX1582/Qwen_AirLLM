@@ -13,11 +13,14 @@ model:
 
 inference:
   # AirLLM settings
-  compression_config:
-    cache_dir: "/cache"
-    # Layer offloading strategy
-    layer_shards_saving_path: "/cache/layer_shards"
-  
+  cache_dir: "/cache"
+  layer_shards_saving_path: "/cache/layer_shards"
+
+  # Number of transformer layers to keep in GPU VRAM simultaneously.
+  # Leave unset (or set to null) for auto-detection based on available VRAM.
+  # Set manually to override: e.g. 2 for large MoE models, 8+ for smaller models.
+  n_layers_in_gpu: null
+
   # Generation defaults
   max_new_tokens: 1024
   temperature: 0.7
