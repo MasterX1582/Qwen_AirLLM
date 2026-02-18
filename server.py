@@ -59,7 +59,6 @@ logger = logging.getLogger(__name__)
 
 MODEL_PATH = config["model"]["path"]
 CACHE_DIR = config["inference"].get("cache_dir", "/cache")
-N_LAYERS_IN_GPU = config["inference"].get("n_layers_in_gpu", None)
 
 # Global model instance
 model = None
@@ -74,16 +73,10 @@ async def lifespan(app: FastAPI):
     Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
     try:
-        load_kwargs = {
-            "layer_shards_saving_path": os.path.join(CACHE_DIR, "layer_shards"),
-        }
-        if N_LAYERS_IN_GPU is not None:
-            load_kwargs["n_layers_in_gpu"] = int(N_LAYERS_IN_GPU)
-            logger.info(f"Using n_layers_in_gpu={N_LAYERS_IN_GPU} (manual override)")
-        else:
-            logger.info("n_layers_in_gpu not set - will auto-detect from available VRAM")
-
-        model = AutoModel.from_pretrained(MODEL_PATH, **load_kwargs)
+        model = AutoModel.from_pretrained(
+            MODEL_PATH,
+            layer_shards_saving_path=os.path.join(CACHE_DIR, "layer_shards")
+        )
         logger.info("Model loaded successfully!")
     except Exception as e:
         logger.error(f"Error loading model: {e}", exc_info=True)
