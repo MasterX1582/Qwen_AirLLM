@@ -7,7 +7,7 @@ server:
   log_level: "info"
 
 model:
-  path: "/models/Qwen3.5-397B-A17B"
+  path: "/models/Qwen3-30B-A3B"
   max_tokens: 4096
   temperature: 0.7
 
@@ -17,6 +17,9 @@ inference:
     cache_dir: "/cache"
     # Layer offloading strategy
     layer_shards_saving_path: "/cache/layer_shards"
+  # Fraction of available VRAM to use for layer loading (0.0-1.0)
+  # Leaves headroom for activations, other GPU processes, and OS overhead
+  vram_fraction: 0.75
   
   # Generation defaults
   max_new_tokens: 1024
@@ -26,7 +29,7 @@ inference:
 
 api:
   # OpenAI compatibility settings
-  model_name: "Qwen/Qwen3.5-397B-A17B"
+  model_name: "Qwen/Qwen3-30B-A3B"
   
 logging:
   directory: "/app/logs"

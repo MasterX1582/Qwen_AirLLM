@@ -12,6 +12,7 @@ sentencepiece>=0.1.99
 huggingface-hub>=0.20.0
 scipy>=1.10.0
 
+
 # NOTE: airllm installed from custom wheel (airllm-2.12.0-py3-none-any.whl)
 # Updated AirLLM with Qwen3.5 MoE support + optimum 2.x compatibility
 

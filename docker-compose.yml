@@ -6,19 +6,18 @@ services:
     ports:
       - "8888:8000"
     volumes:
-      # Model files (read-only)
+      # Model files (read-only, Windows drive)
       - D:/AI-Models:/models:ro
-      # AirLLM cache (persistent, speeds up restarts)
-      - D:/qwen-data/cache:/cache
+      # AirLLM shard cache — named volume on WSL2-native ext4 for fast I/O
+      - qwen_cache:/cache
       # Server config (mount from host, no rebuild needed for changes)
       - ./config:/app/config:ro
-      # Logs (persistent)
+      # Logs (persistent, Windows drive)
       - D:/qwen-data/logs:/app/logs
     environment:
-      - MODEL_PATH=/models/Qwen3.5-397B-A17B
+      - MODEL_PATH=/models/Qwen3-30B-A3B
       - CACHE_DIR=/cache
       - CUDA_VISIBLE_DEVICES=0
-      # Point AirLLM to cache directory
       - AIRLLM_CACHE_DIR=/cache
       - HF_HOME=/cache/huggingface
     deploy:
@@ -29,3 +28,7 @@ services:
               count: 1
               capabilities: [gpu]
     restart: unless-stopped
+
+volumes:
+  qwen_cache:
+    driver: local

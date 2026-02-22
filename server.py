@@ -60,6 +60,7 @@ logger = logging.getLogger(__name__)
 MODEL_PATH = config["model"]["path"]
 CACHE_DIR = config["inference"].get("cache_dir", "/cache")
 
+
 # Global model instance
 model = None
 
@@ -73,10 +74,14 @@ async def lifespan(app: FastAPI):
     Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
     try:
+        vram_fraction = config["inference"].get("vram_fraction", 0.75)
         model = AutoModel.from_pretrained(
             MODEL_PATH,
-            layer_shards_saving_path=os.path.join(CACHE_DIR, "layer_shards")
+            layer_shards_saving_path=os.path.join(CACHE_DIR, "layer_shards"),
         )
+        # Override the default vram_fraction so per-forward recalculation
+        # uses the configured safety margin instead of the hardcoded 0.75
+        model._vram_fraction = vram_fraction
         logger.info("Model loaded successfully!")
     except Exception as e:
         logger.error(f"Error loading model: {e}", exc_info=True)
@@ -156,21 +161,33 @@ async def chat_completion(request: ChatCompletionRequest):
         prompt += "Assistant:"
         
         logger.info(f"Generating response (max_tokens={max_tokens}, temp={temperature})")
-        
-        # Generate response
-        response = model.generate(
+
+        # Tokenize
+        input_ids = model.tokenizer(
             prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=model.max_seq_len
+        ).input_ids
+
+        # Move to model device
+        input_ids = input_ids.to(model.running_device)
+
+        # Generate
+        output_ids = model.generate(
+            input_ids,
             max_new_tokens=max_tokens,
             temperature=temperature,
             top_p=config["inference"]["top_p"],
-            top_k=config["inference"]["top_k"]
+            top_k=config["inference"]["top_k"],
+            do_sample=True,
         )
-        
-        # Clean up response (remove prompt echo if present)
-        if response.startswith(prompt):
-            response = response[len(prompt):].strip()
-        
-        logger.info(f"Generated {len(response.split())} tokens")
+
+        # Decode only the new tokens (strip the prompt)
+        new_ids = output_ids[0][input_ids.shape[-1]:]
+        response = model.tokenizer.decode(new_ids, skip_special_tokens=True).strip()
+
+        logger.info(f"Generated {len(new_ids)} tokens")
         
         # Return OpenAI-compatible format
         return {
@@ -189,9 +206,9 @@ async def chat_completion(request: ChatCompletionRequest):
                 }
             ],
             "usage": {
-                "prompt_tokens": len(prompt.split()),
-                "completion_tokens": len(response.split()),
-                "total_tokens": len(prompt.split()) + len(response.split())
+                "prompt_tokens": int(input_ids.shape[-1]),
+                "completion_tokens": int(len(new_ids)),
+                "total_tokens": int(input_ids.shape[-1]) + int(len(new_ids))
             }
         }
     
@@ -211,15 +228,32 @@ async def completion(request: CompletionRequest):
     try:
         logger.info(f"Generating completion (max_tokens={max_tokens}, temp={temperature})")
         
-        response = model.generate(
+        # Tokenize
+        input_ids = model.tokenizer(
             request.prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=model.max_seq_len
+        ).input_ids
+
+        # Move to model device
+        input_ids = input_ids.to(model.running_device)
+
+        # Generate
+        output_ids = model.generate(
+            input_ids,
             max_new_tokens=max_tokens,
             temperature=temperature,
             top_p=config["inference"]["top_p"],
-            top_k=config["inference"]["top_k"]
+            top_k=config["inference"]["top_k"],
+            do_sample=True,
         )
-        
-        logger.info(f"Generated {len(response.split())} tokens")
+
+        # Decode only the new tokens
+        new_ids = output_ids[0][input_ids.shape[-1]:]
+        response = model.tokenizer.decode(new_ids, skip_special_tokens=True).strip()
+
+        logger.info(f"Generated {len(new_ids)} tokens")
         
         return {
             "id": f"cmpl-{int(time.time())}",
@@ -234,9 +268,9 @@ async def completion(request: CompletionRequest):
                 }
             ],
             "usage": {
-                "prompt_tokens": len(request.prompt.split()),
-                "completion_tokens": len(response.split()),
-                "total_tokens": len(request.prompt.split()) + len(response.split())
+                "prompt_tokens": int(input_ids.shape[-1]),
+                "completion_tokens": int(len(new_ids)),
+                "total_tokens": int(input_ids.shape[-1]) + int(len(new_ids))
             }
         }
     
